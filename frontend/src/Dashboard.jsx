@@ -80,7 +80,7 @@ function Dashboard() {
       {/* Analysis Details */}
       <div className="bg-white p-6 shadow-md rounded-3xl w-full max-w-4xl mb-6 text-center">
         <p className="text-md md:text-lg font-semibold">
-          Analysis ID: <span className="font-normal">{result._id}</span>
+          Analysis ID: <span className="font-normal">{result.id}</span>
         </p>
         <p className="text-md md:text-lg font-semibold">
           Date Analysed: <span className="font-normal">{result.date}</span>
@@ -136,10 +136,16 @@ function Dashboard() {
             </h3>
 
             {urls.length > 0 ? (
-              <p className="text-md md:text-lg">
+              <p className="text-md md:text-lg break-words whitespace-normal overflow-x-auto">
                 <b>Suspicious URLs:</b>{" "}
                 {urls.map((url, index) => (
-                  <span key={index} className="text-red-600 ml-2">{url}</span>
+                  <span
+                    key={index}
+                    className="text-red-600 ml-2 break-words whitespace-normal"
+                    style={{ wordBreak: "break-all" }}
+                  >
+                    {url}
+                  </span>
                 ))}
               </p>
             ) : (

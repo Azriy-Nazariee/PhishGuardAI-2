@@ -21,7 +21,6 @@ function Report() {
             setLoading(false);
             setIsReady(true);
         } else if (id) {
-            // Fetch from backend
             axios.get(`/api/report/${id}`)
                 .then((res) => {
                     setReportData(res.data);
@@ -43,14 +42,16 @@ function Report() {
     const handlePrint = useReactToPrint({
         content: () => reportRef.current,
         documentTitle: "PhishGuard_Report",
-        onBeforeGetContent: () => {
-            if (!reportRef.current) {
-                alert("Error: Report content is not loaded yet!");
-                return Promise.reject();
-            }
-            return Promise.resolve();
-        },
+        removeAfterPrint: true,
     });
+
+    const handlePrintClick = () => {
+        if (!reportRef.current) {
+            alert("Report content is not ready yet.");
+            return;
+        }
+        handlePrint();
+    };
 
     if (loading) {
         return <div className="text-white p-8 text-center">Loading report...</div>;
@@ -70,7 +71,7 @@ function Report() {
                 </h1>
 
                 <div className="mb-4 sm:mb-6 text-sm sm:text-lg">
-                    <p><b>Date Analysed:</b> {result.date}</p>
+                    <p><b>Date Analysed:</b> {new Date(result.date).toLocaleString()}</p>
                     <p><b>Email Title:</b> {result.title}</p>
                     <p><b>Sender:</b> {result.sender}</p>
                 </div>
@@ -92,10 +93,16 @@ function Report() {
                         <h2 className="text-lg sm:text-2xl font-semibold mb-2 text-red-600">🚨 Suspicious Features Detected</h2>
                         <div className="bg-red-100 p-3 sm:p-4 rounded-lg">
                             {result.urls.length > 0 && (
-                                <p className="text-sm sm:text-lg">
+                                <p className="text-sm sm:text-lg break-words whitespace-normal overflow-x-auto">
                                     <b>Suspicious URLs:</b>
                                     {result.urls.map((url, index) => (
-                                        <span key={index} className="text-red-500 ml-2">{url}</span>
+                                        <span
+                                            key={index}
+                                            className="text-red-500 ml-2 break-words whitespace-normal"
+                                            style={{ wordBreak: "break-all" }}
+                                        >
+                                            {url}
+                                        </span>
                                     ))}
                                 </p>
                             )}
@@ -126,7 +133,7 @@ function Report() {
 
             <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-4 mb-8">
                 <button
-                    onClick={() => isReady && handlePrint()}
+                    onClick={handlePrintClick}
                     className="px-4 sm:px-6 py-3 text-white text-sm sm:text-lg font-semibold rounded-lg bg-[#0f61a5] hover:bg-[#d3941a] transition-colors min-w-[140px] max-w-[200px]"
                     disabled={!isReady}
                 >

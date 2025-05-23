@@ -1,7 +1,7 @@
 import multer from "multer";
 import { getDB } from "../db.js";
 import axios from "axios";
-import emlformat from "eml-format";
+import { simpleParser } from "mailparser";
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -20,54 +20,66 @@ const analyseFileHandler = [
         return res.status(401).json({ error: "Unauthorized. No user ID found." });
       }
 
+      // Extract URLs from text
       function extractUrls(text) {
         const urlRegex = /(https?:\/\/[^\s"<>()]+)|(www\.[^\s"<>()]+)/gi;
         const matches = text.match(urlRegex);
-        return matches ? [...new Set(matches)] : []; // Deduplicate
+        return matches ? [...new Set(matches)] : [];
       }
 
-      const fileContent = file.buffer.toString("utf-8");
+      // Flag suspicious keywords
+      function flagKeywords(text) {
+        const keywords = ["urgent", "verify", "password", "login", "click here", "account", "security"];
+        const lowerText = text.toLowerCase();
+        return keywords.filter(keyword => lowerText.includes(keyword));
+      }
 
-      let emailText = fileContent;
+      let emailText = file.buffer.toString("utf-8");
       let sender = "unknown@example.com";
       let subject = "(No Subject)";
 
-      // If .eml, parse it
+      // Parse .eml file using mailparser
       if (file.originalname.endsWith(".eml")) {
-        const parsedEmail = await new Promise((resolve, reject) => {
-          emlformat.read(fileContent, (error, data) => {
-            if (error) reject(error);
-            else resolve(data);
-          });
-        });
-
-        sender = parsedEmail.headers?.from || sender;
-        subject = parsedEmail.headers?.subject || subject;
-        emailText =
-          parsedEmail.text || parsedEmail.html || fileContent;
+        const parsed = await simpleParser(file.buffer);
+        sender = parsed.from?.text || sender;
+        subject = parsed.subject || subject;
+        emailText = parsed.text || parsed.html || emailText;
       }
-      
-      const extractedUrls = extractUrls(emailText);
 
-      // Send body to ML API
+      const extractedUrls = extractUrls(emailText);
+      const flaggedKeywords = flagKeywords(emailText);
+
+      // Send to ML API
       const mlResponse = await axios.post("http://localhost:8000/predict", {
         body: emailText,
       });
 
       const { logistic_regression, random_forest } = mlResponse.data;
+      const lrConfidence = logistic_regression.confidence;
+      const prediction = logistic_regression.prediction;
+
+      // Improved risk scoring
+      let riskScore = Math.round(lrConfidence * 100);
+      if (extractedUrls.length > 0) riskScore += extractedUrls.length * 2;
+      if (flaggedKeywords.length > 0) riskScore += flaggedKeywords.length * 3;
+      if (riskScore > 100) riskScore = 100;
+
+      let riskLevel = "Low";
+      if (riskScore >= 80) riskLevel = "High";
+      else if (riskScore >= 50) riskLevel = "Medium";
 
       const analysisResult = {
-        phishingDetected: logistic_regression.prediction === "phishing",
-        confidence: logistic_regression.confidence,
+        phishingDetected: prediction === "phishing",
+        confidence: lrConfidence,
         rfConfidence: random_forest.confidence,
-        lrConfidence: logistic_regression.confidence,
-        riskScore: logistic_regression.prediction === "phishing" ? 80 : 10,
-        riskLevel: logistic_regression.prediction === "phishing" ? "High" : "Low",
+        lrConfidence,
+        riskScore,
+        riskLevel,
         suggestion:
-          logistic_regression.prediction === "phishing"
+          prediction === "phishing"
             ? "Do not click links or respond"
             : "No action needed",
-        flaggedKeywords: [], // Placeholder for enhancement
+        flaggedKeywords,
         urls: extractedUrls,
       };
 

@@ -129,7 +129,7 @@ function Home() {
             alt="Upload Icon"
             className="w-6 md:w-7 h-auto"
           />
-          <span>Upload Email File / Dataset</span>
+          <span>Upload Email File (.eml)</span>
         </label>
         <input
           type="file"

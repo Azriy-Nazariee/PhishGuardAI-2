@@ -136,18 +136,35 @@ function Dashboard() {
             </h3>
 
             {urls.length > 0 ? (
-              <p className="text-md md:text-lg break-words whitespace-normal overflow-x-auto">
-                <b>Suspicious URLs:</b>{" "}
-                {urls.map((url, index) => (
+              urls.length === 1 ? (
+                <p className="text-md md:text-lg break-words whitespace-normal overflow-x-auto">
+                  <b>Suspicious URLs:</b>{" "}
                   <span
-                    key={index}
                     className="text-red-600 ml-2 break-words whitespace-normal"
                     style={{ wordBreak: "break-all" }}
+                    title={urls[0]}
                   >
-                    {url}
+                    {urls[0]}
                   </span>
-                ))}
-              </p>
+                </p>
+              ) : (
+                <div className="text-md md:text-lg text-left inline-block break-words whitespace-normal overflow-x-auto w-full max-w-full">
+                  <b>Suspicious URLs:</b>
+                  <ul className="list-disc list-inside mt-2">
+                    {urls.map((url, index) => (
+                      <li key={index}>
+                        <span
+                          className="text-red-600 break-words whitespace-normal"
+                          style={{ wordBreak: "break-all" }}
+                          title={url}
+                        >
+                          {url}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
             ) : (
               <p className="text-md md:text-lg text-green-700">
                 No suspicious URLs detected.
@@ -169,12 +186,43 @@ function Dashboard() {
         {/* Verified Features (Legitimate Only) */}
         {!result.isPhishing && (
           <div className="w-full mt-4 p-4 bg-green-200 rounded-lg text-center">
-            {urls.length > 0 && (
-              <p className="text-md md:text-lg">
-                <b>Verified URLs:</b>{" "}
-                {urls.map((url, index) => (
-                  <span key={index} className="text-blue-500 ml-2">{url}</span>
-                ))}
+            <h3 className="text-lg md:text-xl font-bold mb-2 text-green-700">
+              ✅ Verified Features
+            </h3>
+
+            {urls.length > 0 ? (
+              urls.length === 1 ? (
+                <p className="text-md md:text-lg break-words whitespace-normal overflow-x-auto">
+                  <b>Verified URLs:</b>{" "}
+                  <span
+                    className="text-blue-500 ml-2 break-words whitespace-normal"
+                    style={{ wordBreak: "break-all" }}
+                    title={urls[0]}
+                  >
+                    {urls[0]}
+                  </span>
+                </p>
+              ) : (
+                <div className="text-md md:text-lg text-left inline-block break-words whitespace-normal overflow-x-auto w-full max-w-full">
+                  <b>Verified URLs:</b>
+                  <ul className="list-disc list-inside mt-2">
+                    {urls.map((url, index) => (
+                      <li key={index}>
+                        <span
+                          className="text-blue-500 break-words whitespace-normal"
+                          style={{ wordBreak: "break-all" }}
+                          title={url}
+                        >
+                          {url}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            ) : (
+              <p className="text-md md:text-lg text-green-700">
+                No verified URLs detected.
               </p>
             )}
 

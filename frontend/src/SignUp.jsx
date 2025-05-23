@@ -20,20 +20,16 @@ function SignUp() {
         password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Something went wrong");
-        setIsSubmitting(false);
-        return;
-      }
-
       // Success: Redirect after short delay
       setTimeout(() => {
         navigate("/login");
       }, 2000);
     } catch (err) {
-      setError("Network error. Please try again.");
+      if (err.response && err.response.status === 409) {
+        setError("User already exists. Please log in.");
+      } else {
+        setError("Network error or something went wrong. Please try again.");
+      }
       setIsSubmitting(false);
     }
   };
@@ -114,7 +110,7 @@ function SignUp() {
         </form>
       </div>
 
-      {isSubmitting && (
+      {isSubmitting && !error && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-900/80 backdrop-blur-md">
           <div className="bg-white p-6 rounded-lg text-center shadow-lg flex flex-col items-center">
             <div className="loader mb-4"></div>

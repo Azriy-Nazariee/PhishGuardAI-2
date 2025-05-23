@@ -1,17 +1,18 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useReactToPrint } from "react-to-print";
 import axios from "axios";
+import { generatePDF } from "./utils/generatePDF";
 
 function Report() {
     const navigate = useNavigate();
     const location = useLocation();
     const { id } = useParams();
-    const reportRef = useRef(null);
     const [isReady, setIsReady] = useState(false);
     const [reportData, setReportData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showPDFModal, setShowPDFModal] = useState(false);
+    const [pdfMessage, setPdfMessage] = useState("Generating PDF...");
 
     useEffect(() => {
         const stateResult = location.state?.result;
@@ -39,18 +40,19 @@ function Report() {
         }
     }, [id, location.state]);
 
-    const handlePrint = useReactToPrint({
-        content: () => reportRef.current,
-        documentTitle: "PhishGuard_Report",
-        removeAfterPrint: true,
-    });
+    const result = reportData || {};
 
-    const handlePrintClick = () => {
-        if (!reportRef.current) {
-            alert("Report content is not ready yet.");
-            return;
+    const handleGeneratePDF = async () => {
+        try {
+            setShowPDFModal(true);
+            setPdfMessage("Generating PDF...");
+            await generatePDF(result); // assuming generatePDF returns a Promise
+            setPdfMessage("✅ PDF is generated and will be successfully downloaded to your device!");
+        } catch (e) {
+            setPdfMessage("❌ Failed to generate PDF.");
+        } finally {
+            setTimeout(() => setShowPDFModal(false), 2500);
         }
-        handlePrint();
     };
 
     if (loading) {
@@ -61,11 +63,9 @@ function Report() {
         return <div className="text-red-500 p-8 text-center">{error}</div>;
     }
 
-    const result = reportData || {};
-
     return (
         <div className="min-h-screen flex flex-col items-center bg-[#333652] px-4 md:px-6 py-10">
-            <div ref={reportRef} className="bg-white p-6 sm:p-8 shadow-lg rounded-lg w-full max-w-4xl">
+            <div id="report-content" className="bg-white p-6 sm:p-8 shadow-lg rounded-lg w-full max-w-4xl">
                 <h1 className="text-2xl sm:text-3xl font-bold text-center text-[#333652] mb-4 sm:mb-6">
                     PhishGuard AI <br /> Email Analysis Report
                 </h1>
@@ -92,7 +92,7 @@ function Report() {
                     <div>
                         <h2 className="text-lg sm:text-2xl font-semibold mb-2 text-red-600">🚨 Suspicious Features Detected</h2>
                         <div className="bg-red-100 p-3 sm:p-4 rounded-lg">
-                            {result.urls.length > 0 && (
+                            {result.urls?.length > 0 && (
                                 <p className="text-sm sm:text-lg break-words whitespace-normal overflow-x-auto">
                                     <b>Suspicious URLs:</b>
                                     {result.urls.map((url, index) => (
@@ -107,7 +107,7 @@ function Report() {
                                 </p>
                             )}
                             <p className="text-sm sm:text-lg">
-                                <b>Flagged Keywords:</b> {result.flaggedKeywords.join(", ")}
+                                <b>Flagged Keywords:</b> {result.flaggedKeywords?.length > 0 ? result.flaggedKeywords.join(", ") : "None"}
                             </p>
                         </div>
                     </div>
@@ -115,7 +115,7 @@ function Report() {
                     <div>
                         <h2 className="text-lg sm:text-2xl font-semibold mb-2 text-green-600">✅ Verified Features</h2>
                         <div className="bg-green-100 p-3 sm:p-4 rounded-lg">
-                            {result.urls.length > 0 && (
+                            {result.urls?.length > 0 && (
                                 <p className="text-sm sm:text-lg">
                                     <b>Verified URLs:</b>
                                     {result.urls.map((url, index) => (
@@ -124,7 +124,7 @@ function Report() {
                                 </p>
                             )}
                             <p className="text-sm sm:text-lg">
-                                <b>Flagged Keywords:</b> {result.flaggedKeywords.length > 0 ? result.flaggedKeywords.join(", ") : "None"}
+                                <b>Flagged Keywords:</b> {result.flaggedKeywords?.length > 0 ? result.flaggedKeywords.join(", ") : "None"}
                             </p>
                         </div>
                     </div>
@@ -133,7 +133,7 @@ function Report() {
 
             <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-4 mb-8">
                 <button
-                    onClick={handlePrintClick}
+                    onClick={handleGeneratePDF}
                     className="px-4 sm:px-6 py-3 text-white text-sm sm:text-lg font-semibold rounded-lg bg-[#0f61a5] hover:bg-[#d3941a] transition-colors min-w-[140px] max-w-[200px]"
                     disabled={!isReady}
                 >
@@ -147,6 +147,17 @@ function Report() {
                     Back to Dashboard
                 </button>
             </div>
+
+            {showPDFModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-gray-900/80 backdrop-blur-md z-50">
+                    <div className="bg-white p-6 rounded-lg text-center shadow-lg">
+                        <h2 className="text-xl font-bold text-[#333652]">{pdfMessage}</h2>
+                        <div className="mt-4">
+                            <div className="animate-spin rounded-full border-4 border-t-4 border-[#0f61a5] h-8 w-8 mx-auto"></div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

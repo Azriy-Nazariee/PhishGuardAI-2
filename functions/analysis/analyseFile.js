@@ -55,11 +55,12 @@ const analyseFileHandler = [
       });
 
       const { logistic_regression, random_forest } = mlResponse.data;
-      const lrConfidence = logistic_regression.confidence;
-      const prediction = logistic_regression.prediction;
+      // Use random forest instead of logistic regression
+      const rfConfidence = random_forest.confidence;
+      const prediction = random_forest.prediction;
 
       // Improved risk scoring
-      let riskScore = Math.round(lrConfidence * 100);
+      let riskScore = Math.round(rfConfidence * 100);
       if (extractedUrls.length > 0) riskScore += extractedUrls.length * 2;
       if (flaggedKeywords.length > 0) riskScore += flaggedKeywords.length * 3;
       if (riskScore > 100) riskScore = 100;
@@ -70,9 +71,9 @@ const analyseFileHandler = [
 
       const analysisResult = {
         phishingDetected: prediction === "phishing",
-        confidence: lrConfidence,
-        rfConfidence: random_forest.confidence,
-        lrConfidence,
+        confidence: rfConfidence,
+        rfConfidence,
+        lrConfidence: logistic_regression.confidence, // optional, for reference
         riskScore,
         riskLevel,
         suggestion:
